@@ -1,44 +1,61 @@
-name: Modelops deploy test
+name: ModelOps Deploy Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master ]   # o master, si esa es tu rama principal
   pull_request:
     branches: [ master ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
-    container: adsoft/aiops:latest
+    container: josealan2119/aiops:latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: hello-world
-      run: echo "hello world workflows …"
-    - name: show python version 
-      run: pip install -r requirements.txt
-    - name: execute model
-      run: python flowers-model.py
-    - name: show dir
-      run: ls -la flowers-model
+      # 1️⃣ Descargar el código
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: docker login
-      env:
-        DOCKER_USER: ${{secrets.DOCKER_USER}}
-        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
-        
-    - name: Download and run the Docker base image
-      run: docker run -d --name serving_base tensorflow/serving
+      # 2️⃣ Mostrar mensaje de inicio
+      - name: Hello world
+        run: echo "🚀 Iniciando workflow ModelOps Deploy Test..."
 
-    - name: copy model to the Docker image
-      run: docker cp ${{secrets.MODEL_NAME}} serving_base:/models/${{secrets.MODEL_NAME}}
-      
-    - name: Build the custom Docker image
-      run: docker commit --change "ENV MODEL_NAME ${{secrets.MODEL_NAME}}" serving_base ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
-  
-    - name: Docker Push 
-      run: docker push ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
+      # 3️⃣ Instalar dependencias
+      - name: Install dependencies
+        run: |
+          python --version
+          pip install -r requirements.txt
+
+      # 4️⃣ Ejecutar tu modelo (ajusta al script correcto)
+      # Puedes cambiar 'linear.py' por 'regression.py' o el que quieras probar.
+      - name: Execute model
+        run: python linear.py
+
+      # 5️⃣ Mostrar estructura del proyecto
+      - name: Show project structure
+        run: ls -la
+
+      # 6️⃣ Login a Docker Hub (usa tus secrets configurados en GitHub)
+      - name: Docker login
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+
+      # 7️⃣ Descargar e iniciar contenedor base de TensorFlow Serving
+      - name: Run TensorFlow Serving base container
+        run: docker run -d --name serving_base tensorflow/serving
+
+      # 8️⃣ Copiar tu modelo entrenado al contenedor
+      # ⚠️ Asegúrate que el modelo que quieras copiar exista localmente y esté ignorado por .gitignore
+      - name: Copy model to container
+        run: docker cp ${{ secrets.MODEL_NAME }} serving_base:/models/${{ secrets.MODEL_NAME }}
+
+      # 9️⃣ Construir imagen Docker personalizada con tu modelo
+      - name: Build custom Docker image
+        run: docker commit --change "ENV MODEL_NAME=${{ secrets.MODEL_NAME }}" serving_base ${{ secrets.DOCKER_USER }}/tensorflow-${{ secrets.MODEL_NAME }}:${{ github.sha }}
+
+      # 🔟 Subir imagen a Docker Hub
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USER }}/tensorflow-${{ secrets.MODEL_NAME }}:${{ github.sha }}
