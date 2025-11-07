@@ -1,0 +1,10 @@
+tf2env/
+resnet/
+__pycache__/
+*.pyc
+*.pyo
+*.h5
+*.pb
+*.ckpt
+.DS_Store
+venv/
